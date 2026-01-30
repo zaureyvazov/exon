@@ -475,7 +475,7 @@ class AdminController extends Controller
         // Sort by requested column
         $sortBy = $request->get('sort_by', 'balance');
         $sortOrder = $request->get('sort_order', 'desc');
-        
+
         $balanceData = collect($balanceData)->sortBy($sortBy, SORT_REGULAR, $sortOrder === 'desc')->values()->all();
 
         return view('admin.balances', compact('balanceData', 'sortBy', 'sortOrder'));

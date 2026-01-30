@@ -23,7 +23,7 @@
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h1 class="fw-bold mb-1"><i class="bi bi-wallet2 text-success"></i> Doktor Balansları</h1>
-                <p class="text-muted mb-0">Bütün doktorların komisyon məlumatları və statistikası</p>
+                <p class="text-muted mb-0">Bütün doktorların komissiya məlumatları və statistikası</p>
             </div>
             <form method="GET" action="{{ route('admin.balances') }}" class="d-flex gap-2" style="max-width: 400px;">
                 <div class="input-group">
