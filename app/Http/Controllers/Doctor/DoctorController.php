@@ -23,6 +23,7 @@ class DoctorController extends Controller
 
         // Optimize stats with single query
         $referralStats = Referral::where('doctor_id', $doctorId)
+            ->notCancelled()
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending')
             ->selectRaw('SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed')
@@ -39,6 +40,7 @@ class DoctorController extends Controller
 
         $recentReferrals = Referral::with(['patient', 'analyses'])
             ->where('doctor_id', $doctorId)
+            ->notCancelled()
             ->latest()
             ->limit(5)
             ->get();
@@ -195,6 +197,7 @@ class DoctorController extends Controller
     {
         $referrals = Referral::with(['patient', 'analyses'])
             ->where('doctor_id', Auth::id())
+            ->notCancelled()
             ->latest()
             ->paginate(15);
 
@@ -208,9 +211,118 @@ class DoctorController extends Controller
     {
         $referral = Referral::with(['patient', 'analyses', 'doctor'])
             ->where('doctor_id', Auth::id())
+            ->notCancelled()
             ->findOrFail($id);
 
         return view('doctor.referrals.show', compact('referral'));
+    }
+
+    /**
+     * Show edit referral form.
+     */
+    public function editReferral($id)
+    {
+        $referral = Referral::with(['patient', 'analyses'])
+            ->where('doctor_id', Auth::id())
+            ->notCancelled()
+            ->findOrFail($id);
+
+        // Yoxla redaktə edilə bilərmi
+        if (!$referral->canBeEditedByDoctor()) {
+            return redirect()->route('doctor.referrals.show', $id)
+                ->with('error', 'Bu göndəriş redaktə edilə bilməz. Təsdiqlənmiş və ya 1 saatdan çox vaxt keçib.');
+        }
+
+        $doctorId = Auth::id();
+
+        // Get all patients
+        $patients = Patient::where('registered_by', $doctorId)
+            ->select('id', 'name', 'father_name', 'surname', 'serial_number')
+            ->orderBy('name')
+            ->get();
+
+        // Get analyses by category
+        $analyses = $this->getCachedAnalysesByCategory();
+
+        // Get doctor's most popular analyses
+        $popularAnalyses = Analysis::getPopularForDoctor($doctorId);
+
+        // Currently selected analyses
+        $selectedAnalyses = $referral->analyses->pluck('id')->toArray();
+
+        return view('doctor.referrals.edit', compact('referral', 'patients', 'analyses', 'popularAnalyses', 'selectedAnalyses'));
+    }
+
+    /**
+     * Update referral.
+     */
+    public function updateReferral(Request $request, $id)
+    {
+        $referral = Referral::where('doctor_id', Auth::id())->findOrFail($id);
+
+        // Yoxla redaktə edilə bilərmi
+        if (!$referral->canBeEditedByDoctor()) {
+            return redirect()->route('doctor.referrals.show', $id)
+                ->with('error', 'Bu göndəriş redaktə edilə bilməz. Təsdiqlənmiş və ya 1 saatdan çox vaxt keçib.');
+        }
+
+        $validated = $request->validate([
+            'patient_id' => 'required|exists:patients,id',
+            'analyses' => 'required|array|min:1',
+            'analyses.*' => 'exists:analyses,id',
+            'notes' => 'nullable|string',
+        ], [
+            'analyses.required' => 'Ən azı bir analiz seçilməlidir',
+        ]);
+
+        // Əmin ol ki, xəstə dəyişdirilməyib
+        if ($validated['patient_id'] != $referral->patient_id) {
+            return back()->with('error', 'Xəstə məlumatı dəyişdirilə bilməz');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update only notes, patient cannot be changed
+            $referral->update([
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            // Detach all old analyses
+            $referral->analyses()->detach();
+
+            // Attach new analyses with snapshots
+            $syncData = [];
+            $totalProgramCommission = 0;
+
+            foreach ($validated['analyses'] as $analysisId) {
+                $analysis = Analysis::findOrFail($analysisId);
+
+                // Calculate program commission (2% of price without tax)
+                $programCommission = round($analysis->price * 0.02, 2);
+                $totalProgramCommission += $programCommission;
+
+                // Save current price and commission rates as snapshot
+                $syncData[$analysisId] = [
+                    'analysis_price' => $analysis->price,
+                    'commission_percentage' => $analysis->commission_percentage,
+                    'discount_commission_rate' => $analysis->discount_commission_rate ?? 0,
+                    'program_commission' => $programCommission,
+                ];
+            }
+
+            $referral->analyses()->attach($syncData);
+
+            // Update total program commission
+            $referral->update(['total_program_commission' => $totalProgramCommission]);
+
+            DB::commit();
+
+            return redirect()->route('doctor.referrals.show', $id)
+                ->with('success', 'Göndəriş uğurla yeniləndi');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Xəta baş verdi: ' . $e->getMessage());
+        }
     }
 
     /**

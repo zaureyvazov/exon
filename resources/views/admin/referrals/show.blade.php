@@ -11,22 +11,70 @@
         <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="{{ route('admin.referrals.non-discounted') }}">Endirimsiz</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.referrals.discounted') }}">Endirimli</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ route('admin.referrals.cancelled') }}"><i class="bi bi-x-circle text-danger"></i> İptal Edilmişlər</a></li>
         </ul>
     </li>
 @endsection
 
 @section('content')
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
-                <h1 class="h3 fw-bold mb-1">Göndəriş #{{ $referral->id }}</h1>
+                <h1 class="h3 fw-bold mb-1">Göndəriş #{{ $referral->id }}
+                    @if($referral->is_cancelled)
+                        <span class="badge bg-danger"><i class="bi bi-x-circle"></i> İptal Edilib</span>
+                    @endif
+                </h1>
                 <div class="text-muted">Göndəriş detalları və məlumatları</div>
             </div>
-            <a href="javascript:history.back()" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Geri
-            </a>
+            <div class="d-flex gap-2">
+                @if($referral->is_cancelled)
+                    <form method="POST" action="{{ route('admin.referrals.uncancel', $referral->id) }}" class="d-inline" onsubmit="return confirm('İptalı geri almaq istədiyinizdən əminsiniz?')">
+                        @csrf
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-arrow-counterclockwise"></i> İptalı Geri Al
+                        </button>
+                    </form>
+                @else
+                    @if(!$referral->is_approved)
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="bi bi-x-circle"></i> İptal Et
+                        </button>
+                    @endif
+                @endif
+                <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Geri
+                </a>
+            </div>
         </div>
     </div>
+
+    @if($referral->is_cancelled)
+        <div class="alert alert-danger" role="alert">
+            <h6 class="alert-heading mb-2"><i class="bi bi-exclamation-triangle"></i> İptal Səbəbi</h6>
+            <p class="mb-2">{{ $referral->cancellation_reason }}</p>
+            <hr>
+            <div class="small">
+                <strong>İptal edən:</strong> {{ $referral->cancelledBy->name }} {{ $referral->cancelledBy->surname }}<br>
+                <strong>Tarix:</strong> {{ $referral->cancelled_at->format('d.m.Y H:i') }}
+            </div>
+        </div>
+    @endif
 
     <div class="row g-3">
         <div class="col-12 col-xl-5">
@@ -291,6 +339,46 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ləğv Et</button>
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-check-circle"></i> Təyin Et
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Cancel Modal -->
+    @if(!$referral->is_cancelled && !$referral->is_approved)
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ route('admin.referrals.cancel', $referral->id) }}" method="POST">
+                    @csrf
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title"><i class="bi bi-x-circle"></i> Göndərişi İptal Et</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <strong>Diqqət!</strong> Bu əməliyyat göndərişi sistemdən tamamilə gizlədəcək. Yalnız admin panelində görünəcək.
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Göndəriş #{{ $referral->id }}</strong><br>
+                            Xəstə: {{ $referral->patient->full_name }}<br>
+                            Həkim: Dr. {{ $referral->doctor->name }} {{ $referral->doctor->surname }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">İptal Səbəbi</label>
+                            <textarea name="cancellation_reason" class="form-control" rows="4" placeholder="İptal səbəbini daxil edin (istəyə görə)..."></textarea>
+                            <small class="text-muted">Maksimum 500 simvol (istəyə görə)</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> İptal Et
                         </button>
                     </div>
                 </form>

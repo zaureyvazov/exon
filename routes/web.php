@@ -83,7 +83,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // All Referrals Management
     Route::get('/referrals/non-discounted', [AdminController::class, 'nonDiscountedReferrals'])->name('referrals.non-discounted');
     Route::get('/referrals/discounted', [AdminController::class, 'allDiscountedReferrals'])->name('referrals.discounted');
+    Route::get('/referrals/cancelled', [AdminController::class, 'cancelledReferrals'])->name('referrals.cancelled');
     Route::get('/referrals/{id}', [AdminController::class, 'showReferral'])->name('referrals.show');
+    Route::post('/referrals/{id}/cancel', [AdminController::class, 'cancelReferral'])->name('referrals.cancel');
+    Route::post('/referrals/{id}/uncancel', [AdminController::class, 'uncancelReferral'])->name('referrals.uncancel');
 
     // Settings
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
@@ -135,6 +138,8 @@ Route::middleware(['auth', 'role:doctor'])->prefix('doctor')->name('doctor.')->g
     Route::get('/referrals/create/{patient?}', [DoctorController::class, 'createReferral'])->name('referrals.create');
     Route::post('/referrals', [DoctorController::class, 'storeReferral'])->name('referrals.store');
     Route::get('/referrals/{id}', [DoctorController::class, 'showReferral'])->name('referrals.show');
+    Route::get('/referrals/{id}/edit', [DoctorController::class, 'editReferral'])->name('referrals.edit');
+    Route::put('/referrals/{id}', [DoctorController::class, 'updateReferral'])->name('referrals.update');
 
     // Balance
     Route::get('/balance', [DoctorController::class, 'balance'])->name('balance');
@@ -147,6 +152,8 @@ Route::middleware(['auth', 'role:registrar'])->prefix('registrar')->name('regist
     // Referral Viewing
     Route::get('/referrals', [RegistrarController::class, 'referrals'])->name('referrals');
     Route::get('/referrals/{id}', [RegistrarController::class, 'showReferral'])->name('referrals.show');
+    Route::get('/referrals/{id}/edit', [RegistrarController::class, 'editReferral'])->name('referrals.edit');
+    Route::put('/referrals/{id}', [RegistrarController::class, 'updateReferral'])->name('referrals.update');
     Route::post('/referrals/{id}/status', [RegistrarController::class, 'updateStatus'])->name('referrals.status');
     Route::post('/referrals/{id}/approve', [RegistrarController::class, 'approveReferral'])->name('referrals.approve');
     Route::post('/referrals/{id}/reject', [RegistrarController::class, 'rejectReferral'])->name('referrals.reject');

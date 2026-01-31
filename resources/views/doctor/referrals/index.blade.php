@@ -90,9 +90,16 @@
                                 <small class="text-muted">{{ $referral->created_at->format('d.m.Y H:i') }}</small>
                             </td>
                             <td class="text-center">
-                                <a href="{{ route('doctor.referrals.show', $referral->id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> Detallar
-                                </a>
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="{{ route('doctor.referrals.show', $referral->id) }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye"></i> Detallar
+                                    </a>
+                                    @if($referral->canBeEditedByDoctor())
+                                        <a href="{{ route('doctor.referrals.edit', $referral->id) }}" class="btn btn-sm btn-warning" title="Redaktə et ({{ $referral->remaining_edit_time }} dəq qalıb)">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach

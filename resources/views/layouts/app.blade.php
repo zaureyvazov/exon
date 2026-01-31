@@ -291,6 +291,12 @@
                                         <i class="bi bi-percent"></i> Endirimli Göndərişlər
                                     </a>
                                 </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('admin.referrals.cancelled') ? 'active' : '' }}" href="{{ route('admin.referrals.cancelled') }}">
+                                        <i class="bi bi-x-circle text-danger"></i> İptal Edilmişlər
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item">

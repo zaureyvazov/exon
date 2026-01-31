@@ -14,9 +14,16 @@
                 <h1 class="h3 fw-bold mb-1">Göndəriş #{{ $referral->id }}</h1>
                 <div class="text-muted">Göndəriş detalları və məlumatları</div>
             </div>
-            <a href="{{ route('registrar.referrals') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Geri
-            </a>
+            <div class="d-flex gap-2">
+                @if($referral->canBeEditedByRegistrar())
+                    <a href="{{ route('registrar.referrals.edit', $referral->id) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Düzəliş Et
+                    </a>
+                @endif
+                <a href="{{ route('registrar.referrals') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Geri
+                </a>
+            </div>
         </div>
     </div>
 

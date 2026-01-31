@@ -3,18 +3,24 @@
 namespace App\Http\Controllers\Registrar;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Traits\CachesAnalyses;
 use App\Models\Referral;
+use App\Models\Analysis;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RegistrarController extends Controller
 {
+    use CachesAnalyses;
+    
     /**
      * Show registrar dashboard.
      */
     public function dashboard()
     {
         // Optimize stats with single query
-        $referralStats = Referral::selectRaw('COUNT(*) as total')
+        $referralStats = Referral::notCancelled()
+            ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending')
             ->selectRaw('SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed')
             ->selectRaw('SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) as today')
@@ -28,6 +34,7 @@ class RegistrarController extends Controller
         ];
 
         $recentReferrals = Referral::with(['patient', 'doctor', 'analyses'])
+            ->notCancelled()
             ->latest()
             ->limit(10)
             ->get();
@@ -40,7 +47,7 @@ class RegistrarController extends Controller
      */
     public function referrals(Request $request)
     {
-        $query = Referral::with(['patient', 'doctor', 'analyses']);
+        $query = Referral::with(['patient', 'doctor', 'analyses'])->notCancelled();
 
         // Filter by status
         if ($request->has('status') && $request->status != 'all') {
@@ -67,7 +74,7 @@ class RegistrarController extends Controller
      */
     public function showReferral($id)
     {
-        $referral = Referral::with(['patient', 'doctor', 'analyses'])->findOrFail($id);
+        $referral = Referral::with(['patient', 'doctor', 'analyses'])->notCancelled()->findOrFail($id);
 
         return view('registrar.referrals.show', compact('referral'));
     }
@@ -115,7 +122,7 @@ class RegistrarController extends Controller
             'cancellation_reasons' => 'nullable|array',
         ]);
 
-        $referral = Referral::with(['doctor', 'analyses'])->findOrFail($id);
+        $referral = Referral::with(['doctor', 'analyses'])->notCancelled()->findOrFail($id);
 
         // Update cancellation status for analyses
         $cancelledAnalyses = $validated['cancelled_analyses'] ?? [];
@@ -221,6 +228,96 @@ class RegistrarController extends Controller
             'discount_reason' => null,        ]);
 
         return back()->with('success', 'Təsdiq ləğv edildi');
+    }
+
+    /**
+     * Show edit referral form for registrar.
+     */
+    public function editReferral($id)
+    {
+        $referral = Referral::with(['patient', 'doctor', 'analyses'])
+            ->notCancelled()
+            ->findOrFail($id);
+
+        // Yoxla redaktə edilə bilərmi
+        if (!$referral->canBeEditedByRegistrar()) {
+            return redirect()->route('registrar.referrals.show', $id)
+                ->with('error', 'Bu göndəriş redaktə edilə bilməz. Artıq təsdiqlənib.');
+        }
+
+        // Get analyses by category
+        $analyses = $this->getCachedAnalysesByCategory();
+
+        // Currently selected analyses
+        $selectedAnalyses = $referral->analyses->pluck('id')->toArray();
+
+        return view('registrar.referrals.edit', compact('referral', 'analyses', 'selectedAnalyses'));
+    }
+
+    /**
+     * Update referral for registrar.
+     */
+    public function updateReferral(Request $request, $id)
+    {
+        $referral = Referral::findOrFail($id);
+
+        // Yoxla redaktə edilə bilərmi
+        if (!$referral->canBeEditedByRegistrar()) {
+            return redirect()->route('registrar.referrals.show', $id)
+                ->with('error', 'Bu göndəriş redaktə edilə bilməz. Artıq təsdiqlənib.');
+        }
+
+        $validated = $request->validate([
+            'analyses' => 'required|array|min:1',
+            'analyses.*' => 'exists:analyses,id',
+            'notes' => 'nullable|string',
+        ], [
+            'analyses.required' => 'Ən azı bir analiz seçilməlidir',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Update notes
+            $referral->update([
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            // Detach all old analyses
+            $referral->analyses()->detach();
+
+            // Attach new analyses with snapshots
+            $syncData = [];
+            $totalProgramCommission = 0;
+
+            foreach ($validated['analyses'] as $analysisId) {
+                $analysis = Analysis::findOrFail($analysisId);
+
+                // Calculate program commission (2% of price without tax)
+                $programCommission = round($analysis->price * 0.02, 2);
+                $totalProgramCommission += $programCommission;
+
+                // Save current price and commission rates as snapshot
+                $syncData[$analysisId] = [
+                    'analysis_price' => $analysis->price,
+                    'commission_percentage' => $analysis->commission_percentage,
+                    'discount_commission_rate' => $analysis->discount_commission_rate ?? 0,
+                    'program_commission' => $programCommission,
+                ];
+            }
+
+            $referral->analyses()->attach($syncData);
+
+            // Update total program commission
+            $referral->update(['total_program_commission' => $totalProgramCommission]);
+
+            DB::commit();
+
+            return redirect()->route('registrar.referrals.show', $id)
+                ->with('success', 'Göndəriş uğurla yeniləndi');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Xəta baş verdi: ' . $e->getMessage());
+        }
     }
 
     /**

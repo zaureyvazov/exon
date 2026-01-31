@@ -25,13 +25,19 @@ class Referral extends Model
         'total_program_commission',
         'is_priced',
         'discount_reason',
+        'is_cancelled',
+        'cancelled_at',
+        'cancelled_by',
+        'cancellation_reason',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
         'approved_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'is_approved' => 'boolean',
         'is_priced' => 'boolean',
+        'is_cancelled' => 'boolean',
         'discount_value' => 'decimal:2',
         'final_price' => 'decimal:2',
         'doctor_commission' => 'decimal:2',
@@ -104,6 +110,30 @@ class Referral extends Model
     }
 
     /**
+     * Scope to exclude cancelled referrals (for doctor and registrar views).
+     */
+    public function scopeNotCancelled($query)
+    {
+        return $query->where('is_cancelled', false);
+    }
+
+    /**
+     * Scope to only show cancelled referrals (for admin).
+     */
+    public function scopeCancelled($query)
+    {
+        return $query->where('is_cancelled', true);
+    }
+
+    /**
+     * Get the user who cancelled the referral.
+     */
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    /**
      * Calculate total price from analysis snapshots in pivot table (only non-cancelled).
      */
     public function getTotalPriceAttribute()
@@ -150,5 +180,44 @@ class Referral extends Model
             return number_format($this->discount_value, 2) . ' AZN';
         }
         return 'Yoxdur';
+    }
+
+    /**
+     * Check if referral can be edited by doctor.
+     * Editable if: not approved AND created within last 1 hour
+     */
+    public function canBeEditedByDoctor()
+    {
+        if ($this->is_approved) {
+            return false; // Təsdiqlənmişləri dəyişdirmək olmaz
+        }
+
+        // 1 saat keçibsə redaktə edilə bilməz
+        $oneHourAgo = now()->subHour();
+        return $this->created_at->gt($oneHourAgo);
+    }
+
+    /**
+     * Check if referral can be edited by registrar.
+     * Editable if: not approved (registrar can edit anytime before approval)
+     */
+    public function canBeEditedByRegistrar()
+    {
+        return !$this->is_approved;
+    }
+
+    /**
+     * Get remaining time to edit (in minutes)
+     */
+    public function getRemainingEditTimeAttribute()
+    {
+        if ($this->is_approved) {
+            return 0;
+        }
+
+        $oneHourAfterCreation = $this->created_at->addHour();
+        $remainingMinutes = now()->diffInMinutes($oneHourAfterCreation, false);
+        
+        return max(0, $remainingMinutes);
     }
 }

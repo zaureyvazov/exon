@@ -31,11 +31,12 @@ class AdminController extends Controller
             'total_users' => User::count(),
             'total_doctors' => User::where('role_id', $doctorRole->id)->count(),
             'total_registrars' => User::where('role_id', $registrarRole->id)->count(),
-            'total_referrals' => Referral::count(),
+            'total_referrals' => Referral::notCancelled()->count(),
             'total_analyses' => Analysis::count(),
             'awaiting_commission' => Referral::where('is_approved', true)
                 ->where('discount_type', '!=', 'none')
                 ->where('is_priced', false)
+                ->notCancelled()
                 ->count(),
         ];
 
@@ -52,6 +53,7 @@ class AdminController extends Controller
             $monthlyLabels[] = $date->locale('az')->translatedFormat('M Y');
             $monthlyReferrals[] = Referral::whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month)
+                ->notCancelled()
                 ->count();
         }
 
@@ -68,7 +70,9 @@ class AdminController extends Controller
         // Ən aktiv 5 doktor
         $doctorRole = Role::where('name', 'doctor')->first();
         $doctorPerformance = User::where('role_id', $doctorRole->id)
-            ->withCount('referrals')
+            ->withCount(['referrals' => function($query) {
+                $query->notCancelled();
+            }])
             ->having('referrals_count', '>', 0)
             ->orderBy('referrals_count', 'desc')
             ->limit(5)
@@ -424,7 +428,7 @@ class AdminController extends Controller
             'role',
             'paymentsReceived',
             'referrals' => function($q) {
-                $q->select('id', 'doctor_id', 'is_approved', 'is_priced', 'doctor_commission', 'discount_type');
+                $q->notCancelled()->select('id', 'doctor_id', 'is_approved', 'is_priced', 'doctor_commission', 'discount_type', 'is_cancelled');
             },
             'referrals.analyses' => function($q) {
                 $q->select('analyses.id', 'analyses.name');
@@ -486,7 +490,7 @@ class AdminController extends Controller
      */
     public function doctorBalanceDetail($id)
     {
-        $doctor = User::with(['roles', 'referrals', 'paymentsReceived.admin'])->findOrFail($id);
+        $doctor = User::with(['role', 'referrals', 'paymentsReceived.admin'])->findOrFail($id);
 
         // Check if user is doctor
         if (!$doctor->isDoctor()) {
@@ -497,6 +501,7 @@ class AdminController extends Controller
         $query = $doctor->referrals()
             ->where('is_approved', true)
             ->where('is_priced', true)
+            ->notCancelled()
             ->with(['patient', 'analyses']);
 
         // Apply date filters
@@ -559,7 +564,7 @@ class AdminController extends Controller
         }
 
         $stats = [
-            'total_referrals' => $doctor->referrals()->count(),
+            'total_referrals' => $doctor->referrals()->notCancelled()->count(),
             'approved_referrals' => $approvedReferrals->count(),
             'total_balance' => $totalBalance,
             'normal_count' => count($normalReferrals),
@@ -578,6 +583,7 @@ class AdminController extends Controller
             ->where('is_approved', true)
             ->where('discount_type', '!=', 'none')
             ->where('is_priced', false)
+            ->notCancelled()
             ->latest()
             ->paginate(20);
 
@@ -590,7 +596,8 @@ class AdminController extends Controller
     public function nonDiscountedReferrals(Request $request)
     {
         $query = Referral::with(['doctor', 'patient', 'analyses'])
-            ->where('discount_type', 'none');
+            ->where('discount_type', 'none')
+            ->notCancelled();
 
         // Date filter
         if ($request->filled('start_date')) {
@@ -629,7 +636,8 @@ class AdminController extends Controller
     public function allDiscountedReferrals(Request $request)
     {
         $query = Referral::with(['doctor', 'patient', 'analyses'])
-            ->where('discount_type', '!=', 'none');
+            ->where('discount_type', '!=', 'none')
+            ->notCancelled();
 
         // Date filter
         if ($request->filled('start_date')) {
@@ -667,7 +675,7 @@ class AdminController extends Controller
      */
     public function showReferral($id)
     {
-        $referral = Referral::with(['doctor', 'patient', 'analyses', 'approvedBy'])->findOrFail($id);
+        $referral = Referral::with(['doctor', 'patient', 'analyses', 'approvedBy', 'cancelledBy'])->findOrFail($id);
 
         return view('admin.referrals.show', compact('referral'));
     }
@@ -699,7 +707,8 @@ class AdminController extends Controller
         // Get approved referrals with program commission
         $referralsQuery = Referral::with(['patient', 'doctor'])
             ->where('is_approved', true)
-            ->where('total_program_commission', '>', 0);
+            ->where('total_program_commission', '>', 0)
+            ->notCancelled();
 
         // Date filter
         if ($request->filled('date')) {
@@ -720,6 +729,7 @@ class AdminController extends Controller
 
         // Calculate total program commission from APPROVED referrals only
         $totalCommission = Referral::where('is_approved', true)
+            ->notCancelled()
             ->sum('total_program_commission') ?? 0;
 
         // Get total paid amount
@@ -762,6 +772,62 @@ class AdminController extends Controller
         ]);
 
         return back()->with('success', 'Ödəniş uğurla qeyd edildi');
+    }
+
+    /**
+     * Cancel a referral
+     */
+    public function cancelReferral(Request $request, $id)
+    {
+        $referral = Referral::findOrFail($id);
+
+        // Check if referral is approved
+        if ($referral->is_approved) {
+            return back()->with('error', 'Təsdiqlənmiş göndəriş iptal edilə bilməz. Əvvəlcə təsdiq geri alın');
+        }
+
+        $validated = $request->validate([
+            'cancellation_reason' => 'nullable|string|max:500',
+        ]);
+
+        $referral->update([
+            'is_cancelled' => true,
+            'cancelled_at' => now(),
+            'cancelled_by' => Auth::id(),
+            'cancellation_reason' => $validated['cancellation_reason'],
+        ]);
+
+        return back()->with('success', 'Göndəriş uğurla iptal edildi');
+    }
+
+    /**
+     * Uncancel a referral
+     */
+    public function uncancelReferral($id)
+    {
+        $referral = Referral::findOrFail($id);
+
+        $referral->update([
+            'is_cancelled' => false,
+            'cancelled_at' => null,
+            'cancelled_by' => null,
+            'cancellation_reason' => null,
+        ]);
+
+        return back()->with('success', 'İptal geri alındı');
+    }
+
+    /**
+     * Show cancelled referrals
+     */
+    public function cancelledReferrals()
+    {
+        $referrals = Referral::with(['patient', 'doctor', 'cancelledBy'])
+            ->cancelled()
+            ->latest('cancelled_at')
+            ->paginate(20);
+
+        return view('admin.referrals.cancelled', compact('referrals'));
     }
 
     /**

@@ -16,9 +16,20 @@
                 </h1>
                 <p class="text-muted">Göndəriş detalları və analizlər</p>
             </div>
-            <a href="{{ route('doctor.referrals') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Geri
-            </a>
+            <div class="d-flex gap-2">
+                @if($referral->canBeEditedByDoctor())
+                    <a href="{{ route('doctor.referrals.edit', $referral->id) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Redaktə Et
+                    </a>
+                    <div class="alert alert-warning mb-0 py-2 px-3 d-flex align-items-center">
+                        <i class="bi bi-clock-history me-2"></i>
+                        <small>Redaktə müddəti: {{ $referral->remaining_edit_time }} dəqiqə qalıb</small>
+                    </div>
+                @endif
+                <a href="{{ route('doctor.referrals') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Geri
+                </a>
+            </div>
         </div>
     </div>
 

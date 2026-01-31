@@ -11,6 +11,8 @@
         <ul class="dropdown-menu">
             <li><a class="dropdown-item active" href="{{ route('admin.referrals.non-discounted') }}">Endirimsiz</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.referrals.discounted') }}">Endirimli</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ route('admin.referrals.cancelled') }}"><i class="bi bi-x-circle text-danger"></i> İptal Edilmişlər</a></li>
         </ul>
     </li>
 @endsection
@@ -122,9 +124,18 @@
                             </td>
                             <td><small>{{ $referral->created_at->format('d.m.Y H:i') }}</small></td>
                             <td>
-                                <a href="{{ route('admin.referrals.show', $referral->id) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> Bax
-                                </a>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('admin.referrals.show', $referral->id) }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-eye"></i> Bax
+                                    </a>
+                                    @if(!$referral->is_approved)
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#cancelModal{{ $referral->id }}">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -137,6 +148,49 @@
     <div class="mt-3">
         {{ $referrals->links() }}
     </div>
+
+    <!-- Cancel Modals -->
+    @foreach($referrals as $referral)
+    @if(!$referral->is_approved)
+    <div class="modal fade" id="cancelModal{{ $referral->id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ route('admin.referrals.cancel', $referral->id) }}" method="POST">
+                    @csrf
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title"><i class="bi bi-x-circle"></i> Göndərişi İptal Et</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <strong>Diqqət!</strong> Bu göndəriş iptal ediləcək və yalnız admin panelində görünəcək.
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Göndəriş #{{ $referral->id }}</strong><br>
+                            Xəstə: {{ $referral->patient->full_name }}<br>
+                            Həkim: Dr. {{ $referral->doctor->name }} {{ $referral->doctor->surname }}<br>
+                            Qiymət: {{ number_format($referral->total_price, 2) }} AZN
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">İptal Səbəbi</label>
+                            <textarea name="cancellation_reason" class="form-control" rows="4" placeholder="İptal səbəbini daxil edin (istəyə görə)..."></textarea>
+                            <small class="text-muted">Maksimum 500 simvol (istəyə görə)</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bağla</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> İptal Et
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+    @endforeach
     @else
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center py-5">
