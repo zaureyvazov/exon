@@ -41,7 +41,7 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <span class="text-muted">Kimlik No</span>
-                           
+
                             @if($referral->patient->serial_number)
                                 <span class="badge bg-secondary ms-2">{{ $referral->patient->serial_number }}</span>
                             @endif

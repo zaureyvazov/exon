@@ -89,7 +89,7 @@
                             </td>
                             <td>
                                 <div>{{ $referral->patient->full_name }} {{ $referral->patient->father_name }}</div>
-                               
+
                                 @if($referral->patient->serial_number)
                                     <br><small class="text-muted">{{ $referral->patient->serial_number }}</small>
                                 @endif
@@ -138,15 +138,15 @@
                                         <i class="bi bi-eye"></i> Bax
                                     </a>
                                     @if(!$referral->is_priced)
-                                    <button type="button" class="btn btn-success" 
-                                            data-bs-toggle="modal" 
+                                    <button type="button" class="btn btn-success"
+                                            data-bs-toggle="modal"
                                             data-bs-target="#commissionModal{{ $referral->id }}">
                                         <i class="bi bi-cash"></i>
                                     </button>
                                     @endif
                                     @if(!$referral->is_approved)
-                                    <button type="button" class="btn btn-outline-danger" 
-                                            data-bs-toggle="modal" 
+                                    <button type="button" class="btn btn-outline-danger"
+                                            data-bs-toggle="modal"
                                             data-bs-target="#cancelModal{{ $referral->id }}">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
@@ -240,7 +240,7 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Həkim Komissiyası (AZN) <span class="text-danger">*</span></label>
-                            <input type="number" name="doctor_commission" class="form-control" step="0.01" min="0" 
+                            <input type="number" name="doctor_commission" class="form-control" step="0.01" min="0"
                                    max="{{ $referral->final_price }}" required placeholder="Məsələn: 10.50">
                             <small class="text-muted">Maksimum: {{ number_format($referral->final_price, 2) }} AZN</small>
                         </div>

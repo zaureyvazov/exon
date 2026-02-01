@@ -21,5 +21,16 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Yeni Göndəriş",
+      "short_name": "Göndəriş",
+      "description": "Yeni göndəriş yarat",
+      "url": "/doctor/referrals/create",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["health", "medical", "productivity"],
+  "prefer_related_applications": false
 }

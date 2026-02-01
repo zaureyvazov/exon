@@ -217,7 +217,7 @@ class Referral extends Model
 
         $oneHourAfterCreation = $this->created_at->addHour();
         $remainingMinutes = now()->diffInMinutes($oneHourAfterCreation, false);
-        
+
         return max(0, $remainingMinutes);
     }
 }

@@ -20,11 +20,16 @@ use App\Http\Controllers\NotificationController;
 |
 */
 
+// Offline page (PWA fallback)
+Route::get('/offline', function () {
+    return view('offline');
+});
+
 // Redirect root - session varsa dashboard-a, yoxsa login-ə
 Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
-        
+
         if ($user->isAdmin()) {
             return redirect('/admin/dashboard');
         } elseif ($user->isDoctor()) {
@@ -32,10 +37,10 @@ Route::get('/', function () {
         } elseif ($user->isRegistrar()) {
             return redirect('/registrar/dashboard');
         }
-        
+
         return redirect('/dashboard');
     }
-    
+
     return redirect('/login');
 });
 

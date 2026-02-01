@@ -82,7 +82,7 @@
                             </td>
                             <td>
                                 <div class="text-danger" style="max-width: 250px;">
-                                    <i class="bi bi-exclamation-circle"></i> 
+                                    <i class="bi bi-exclamation-circle"></i>
                                     {{ $referral->cancellation_reason }}
                                 </div>
                             </td>
@@ -100,13 +100,13 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('admin.referrals.show', $referral->id) }}" 
-                                       class="btn btn-outline-primary" 
+                                    <a href="{{ route('admin.referrals.show', $referral->id) }}"
+                                       class="btn btn-outline-primary"
                                        title="Ətraflı">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <form method="POST" 
-                                          action="{{ route('admin.referrals.uncancel', $referral->id) }}" 
+                                    <form method="POST"
+                                          action="{{ route('admin.referrals.uncancel', $referral->id) }}"
                                           class="d-inline"
                                           onsubmit="return confirm('İptalı geri almaq istədiyinizdən əminsiniz?')">
                                         @csrf

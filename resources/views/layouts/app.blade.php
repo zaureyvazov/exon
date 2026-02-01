@@ -115,6 +115,167 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Skeleton Loading Styles */
+        #skeleton-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #skeleton-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .skeleton-navbar {
+            background: linear-gradient(135deg, #2D9B6C 0%, #1e7e4f 100%);
+            height: 56px;
+            width: 100%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .skeleton-content {
+            flex: 1;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .skeleton-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-title {
+            height: 28px;
+            width: 60%;
+            margin-bottom: 15px;
+        }
+
+        .skeleton-text {
+            height: 16px;
+            margin-bottom: 10px;
+        }
+
+        .skeleton-text.short {
+            width: 40%;
+        }
+
+        .skeleton-text.medium {
+            width: 70%;
+        }
+
+        .skeleton-button {
+            height: 38px;
+            width: 120px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .skeleton-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .skeleton-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .skeleton-row-content {
+            flex: 1;
+        }
+
+        /* PWA Loading Logo */
+        .skeleton-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .skeleton-logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #2D9B6C 0%, #1e7e4f 100%);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .skeleton-logo-icon i {
+            font-size: 48px;
+            color: white;
+        }
+
+        .skeleton-logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2D9B6C;
+            margin-bottom: 10px;
+        }
+
+        .skeleton-logo-subtext {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .skeleton-progress {
+            width: 200px;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin: 20px auto 0;
+            overflow: hidden;
+        }
+
+        .skeleton-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #2D9B6C, #1e7e4f);
+            border-radius: 2px;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
         /* Button Ripple Effect */
         .btn {
             position: relative;
@@ -200,6 +361,52 @@
     </style>
 </head>
 <body class="bg-light">
+    <!-- Skeleton Loader for PWA & Slow Connection -->
+    <div id="skeleton-loader">
+        <!-- Skeleton Navbar -->
+        <div class="skeleton-navbar"></div>
+        
+        <!-- Centered Logo with Loading Animation -->
+        <div class="skeleton-logo">
+            <div class="skeleton-logo-icon">
+                <i class="bi bi-heart-pulse-fill"></i>
+            </div>
+            <div class="skeleton-logo-text">EXON</div>
+            <div class="skeleton-logo-subtext">Yüklənir...</div>
+            <div class="skeleton-progress">
+                <div class="skeleton-progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- Optional: Skeleton Content Cards (hidden behind logo) -->
+        <div class="skeleton-content" style="opacity: 0.3;">
+            <div class="skeleton-card">
+                <div class="skeleton-title skeleton"></div>
+                <div class="skeleton-row">
+                    <div class="skeleton-avatar skeleton"></div>
+                    <div class="skeleton-row-content">
+                        <div class="skeleton-text medium skeleton"></div>
+                        <div class="skeleton-text short skeleton"></div>
+                    </div>
+                </div>
+                <div class="skeleton-row">
+                    <div class="skeleton-avatar skeleton"></div>
+                    <div class="skeleton-row-content">
+                        <div class="skeleton-text skeleton"></div>
+                        <div class="skeleton-text short skeleton"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="skeleton-card">
+                <div class="skeleton-text skeleton"></div>
+                <div class="skeleton-text medium skeleton"></div>
+                <div class="skeleton-text short skeleton"></div>
+                <div class="skeleton-button skeleton"></div>
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm" style="border-bottom: 3px solid #2D9B6C;">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="@if(Auth::user()->isAdmin()){{ route('admin.dashboard') }}@elseif(Auth::user()->isDoctor()){{ route('doctor.dashboard') }}@elseif(Auth::user()->isRegistrar()){{ route('registrar.dashboard') }}@else#@endif">
@@ -532,6 +739,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Hide Skeleton Loader when page is ready
+            const skeletonLoader = document.getElementById('skeleton-loader');
+            
+            // Hide skeleton after DOM loaded
+            setTimeout(() => {
+                if (skeletonLoader) {
+                    skeletonLoader.classList.add('hidden');
+                    // Remove from DOM after animation completes
+                    setTimeout(() => {
+                        skeletonLoader.style.display = 'none';
+                    }, 500);
+                }
+            }, 100);
+
             // Loading Animation
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'loading-spinner hidden';
@@ -564,6 +785,11 @@
                 if (event.persisted) {
                     loadingDiv.classList.add('hidden');
                     isNavigating = false;
+                    
+                    // Also hide skeleton if still visible
+                    if (skeletonLoader) {
+                        skeletonLoader.style.display = 'none';
+                    }
                 }
             });
 

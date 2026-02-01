@@ -88,7 +88,7 @@
                             </td>
                             <td>
                                 <div>{{ $referral->patient->full_name }} {{ $referral->patient->father_name }}</div>
-                                
+
                                 @if($referral->patient->serial_number)
                                     <br><small class="text-muted">{{ $referral->patient->serial_number }}</small>
                                 @endif
@@ -129,8 +129,8 @@
                                         <i class="bi bi-eye"></i> Bax
                                     </a>
                                     @if(!$referral->is_approved)
-                                    <button type="button" class="btn btn-outline-danger" 
-                                            data-bs-toggle="modal" 
+                                    <button type="button" class="btn btn-outline-danger"
+                                            data-bs-toggle="modal"
                                             data-bs-target="#cancelModal{{ $referral->id }}">
                                         <i class="bi bi-x-circle"></i>
                                     </button>

@@ -90,7 +90,7 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <span class="text-muted">Kimlik No</span>
-                            
+
                             @if($referral->patient->serial_number)
                                 <span class="badge bg-secondary ms-2">{{ $referral->patient->serial_number }}</span>
                             @endif
@@ -306,7 +306,7 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Həkim Komissiyası (AZN) <span class="text-danger">*</span></label>
-                            <input type="number" name="doctor_commission" class="form-control" step="0.01" min="0" 
+                            <input type="number" name="doctor_commission" class="form-control" step="0.01" min="0"
                                    max="{{ $referral->final_price }}" required placeholder="Məsələn: 10.50">
                             <small class="text-muted">Maksimum: {{ number_format($referral->final_price, 2) }} AZN</small>
                         </div>

@@ -226,7 +226,7 @@
                             <a href="{{ route('doctor.referrals.show', $referral->id) }}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> Ləğv et
                             </a>
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <i class="bi bi-check-circle"></i> Dəyişiklikləri Yadda Saxla
                             </button>
                         </div>
@@ -261,10 +261,10 @@
         // Filter analyses by category
         function filterByCategory(category) {
             currentCategory = category;
-            
+
             analysisItems.forEach(item => {
                 const itemCategory = item.dataset.category;
-                
+
                 if (category === 'all' || itemCategory === category) {
                     item.style.display = '';
                 } else {
@@ -285,13 +285,13 @@
         // Search functionality
         searchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            
+
             analysisItems.forEach(item => {
                 const itemCategory = item.dataset.category;
                 const name = item.dataset.name;
                 const matchesSearch = name.includes(searchTerm);
                 const matchesCategory = currentCategory === 'all' || itemCategory === currentCategory;
-                
+
                 if (matchesSearch && matchesCategory) {
                     item.style.display = '';
                 } else {
@@ -305,7 +305,7 @@
             button.addEventListener('click', function() {
                 categoryButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                
+
                 const category = this.dataset.category;
                 filterByCategory(category);
                 searchInput.value = '';
@@ -334,9 +334,33 @@
             updateSelectedCount();
         });
 
-        // Update count on checkbox change
+        // Update count on checkbox change + sync duplicate checkboxes
         document.querySelectorAll('.analysis-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', updateSelectedCount);
+            checkbox.addEventListener('change', function() {
+                // Sync all checkboxes with same value (for popular + category duplicates)
+                const analysisId = this.value;
+                const isChecked = this.checked;
+                
+                document.querySelectorAll(`.analysis-checkbox[value="${analysisId}"]`).forEach(cb => {
+                    cb.checked = isChecked;
+                });
+                
+                updateSelectedCount();
+            });
+        });
+
+        // Form submit validation
+        const form = document.querySelector('form');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        form.addEventListener('submit', function(e) {
+            const checkedBoxes = document.querySelectorAll('.analysis-checkbox:checked');
+            
+            if (checkedBoxes.length === 0) {
+                e.preventDefault();
+                alert('Xəta: Ən azı bir analiz seçilməlidir!');
+                return false;
+            }
         });
 
         // Initial count update

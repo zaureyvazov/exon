@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 class RegistrarController extends Controller
 {
     use CachesAnalyses;
-    
+
     /**
      * Show registrar dashboard.
      */

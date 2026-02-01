@@ -287,6 +287,10 @@ class DoctorController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
+            // Log for debugging
+            \Log::info('Referral Edit - Old analyses: ' . $referral->analyses->pluck('id')->implode(', '));
+            \Log::info('Referral Edit - New analyses from form: ' . implode(', ', $validated['analyses'] ?? []));
+
             // Detach all old analyses
             $referral->analyses()->detach();
 

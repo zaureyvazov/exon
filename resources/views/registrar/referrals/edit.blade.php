@@ -219,10 +219,10 @@
         // Filter analyses by category
         function filterByCategory(category) {
             currentCategory = category;
-            
+
             analysisItems.forEach(item => {
                 const itemCategory = item.dataset.category;
-                
+
                 if (category === 'all' || itemCategory === category) {
                     item.style.display = '';
                 } else {
@@ -241,13 +241,13 @@
         // Search functionality
         searchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            
+
             analysisItems.forEach(item => {
                 const itemCategory = item.dataset.category;
                 const name = item.dataset.name;
                 const matchesSearch = name.includes(searchTerm);
                 const matchesCategory = currentCategory === 'all' || itemCategory === currentCategory;
-                
+
                 if (matchesSearch && matchesCategory) {
                     item.style.display = '';
                 } else {
@@ -261,7 +261,7 @@
             button.addEventListener('click', function() {
                 categoryButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                
+
                 const category = this.dataset.category;
                 filterByCategory(category);
                 searchInput.value = '';
